@@ -7,3 +7,5 @@ venv/
 *.log
 *.swp
 *.pyc
+log.txt
+wifi.json
