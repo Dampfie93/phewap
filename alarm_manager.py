@@ -1,4 +1,4 @@
-from time import sleep, sleep_ms, time, gmtime, mktime
+from time import sleep, sleep_ms, time, gmtime, mktime, localtime
 from utils import FileManager, log, timeStr, clockStr, roundedStr, dateStr, isLeapYear, timeToDate
 
 
@@ -54,9 +54,9 @@ class Alarm(FileManager):
     @staticmethod
     def _nextActiveDay(current_wday, weekday_str):
         """
-        Determine the next active day based on the current weekday and the weekday string.
+        Determine the next active day after the current weekday, based on the weekday string.
         """
-        for i in range(7):
+        for i in range(1, 8):  # Start from the next day (i = 1)
             next_wday = (current_wday + i) % 7
             if weekday_str[next_wday] == '1':
                 return i  # Number of days to add to current day
@@ -64,24 +64,32 @@ class Alarm(FileManager):
 
     @classmethod
     def addAlarm(cls, hour, minute, repeat, weekday):
-        # Current time
-        now = gmtime()
+        # Adjusting for timezone
+        timezone = 0
+        utc_offset_seconds = timezone * 3600  # Convert hours to seconds
+
+        # Current time in local timezone
+        now = localtime(time() + utc_offset_seconds)
         alarm_time = mktime((now[0], now[1], now[2], hour, minute, 0, now[6], now[7]))
 
-        # Check if today is an active day and the time has not passed
-        if weekday[now[6]] == '1' and alarm_time > time():
+        # Check if today
+        if weekday[now[6]] == '1' and alarm_time > time() + utc_offset_seconds:
             pass  # Alarm is set for today
         else:
             # Find the next active day
             days_to_add = cls._nextActiveDay(now[6], weekday)
             if days_to_add is not None:
                 alarm_time += days_to_add * 86400  # Add the necessary days in seconds
+        
+        # Adjusting alarm time back to UTC
+        alarm_time -= utc_offset_seconds
 
         # Create and add the new alarm
         new_alarm = cls(True, alarm_time, repeat, weekday)
         cls.alarm_list.append(new_alarm)
+        return new_alarm
 
-        # Optional: Update the stored alarm list
+        # Update alarm list
         cls.setAlarmListtoJson()
 
     @classmethod

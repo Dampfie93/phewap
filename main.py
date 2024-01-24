@@ -99,10 +99,11 @@ def application_mode():
         return render_template(f"{APP_TEMPLATE_PATH}/reset.html", access_point_ssid = AP_NAME)
 
     def app_set_alarm(request):
+        # Get alarm time from request
         time = request.form.get("alarmtime")
-        print("Requ:", time)
         hour, minute = map(int, time.split(':'))
-        print("Time:", hour, minute)
+
+        # Check for repeat
         mon = True if request.form.get("cbox_mon") == "on" else False
         tue = True if request.form.get("cbox_tue") == "on" else False
         wed = True if request.form.get("cbox_wed") == "on" else False
@@ -111,7 +112,8 @@ def application_mode():
         sat = True if request.form.get("cbox_sat") == "on" else False
         sun = True if request.form.get("cbox_sun") == "on" else False
         repeat = 1 if (mon or tue or wed or thu or fri or sat or sun) else 0
-        print("Rep: ", repeat)
+        
+        # Set weekdays
         if repeat == 1:
             weekday = ''.join(['1' if day else '0' for day in [mon, tue, wed, thu, fri, sat, sun]])
             weekday_str = weekday
@@ -119,7 +121,10 @@ def application_mode():
             weekday = "11111111"
             weekday_str = "Einmalig"
 
-        Alarm.addAlarm(hour, minute, repeat, weekday)
+        # Add alarm to list
+        alarm = Alarm.addAlarm(hour, minute, repeat, weekday)
+        sec_till_alarm = alarm["time"] - time.time()
+        print(f"Alarm set for {sec_till_alarm} seconds from now.")
         return render_template(f"{APP_TEMPLATE_PATH}/setalarm.html", alarmtime=time, weekdays=weekday_str)
 
     

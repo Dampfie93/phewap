@@ -14,13 +14,4 @@ def getWeather():
     response = urequests.get('https://api.brightsky.dev/current_weather?lat=50.078217&lon=8.239761')
     r = response.json()['weather']
     print(r['condition'],r['temperature'], r['icon'])
-
-
-
-
-if __name__ == "__main__":
-    from utils import WLAN
-    ip = WLAN.connect()
-    print(ip)
-    getWeather()
     
