@@ -9,14 +9,6 @@
     </head>
     <body>
         <div class="box">
-            <h1 id="timeValue">...</h1>
-            <h1 id="dateValue">...</h1>
-        </div>
-        <div class="box">
-            <button id="toggleBtn">Toggle LED</button>
-            <button id="resetBtn">Reset Wifi</button>
-        </div>
-        <div class="box">
             <h2>Alarm setzen</h2>
             <form action="/setalarm" method="POST">
                 <input type="time" id="alarmtime" name="alarmtime" min="00:00" max="23:59" required>
@@ -39,10 +31,16 @@
                 <input type="submit" class="button" value="Alarm setzen">
             </form>
         </div>
-        <script src="data:text/javascript,async function getDate() { const elem = document.getElementById('dateValue'); const t = await fetch('/date'); const tVal = await t.text(); elem.innerHTML = tVal; setTimeout(getDate, 10000)}; getDate();" defer></script>
-        <script src="data:text/javascript,async function getTime() { const elem = document.getElementById('timeValue'); const t = await fetch('/time'); const tVal = await t.text(); elem.innerHTML = tVal; setTimeout(getTime, 10000)}; getTime();" defer></script>
+        <div class='box'>
+            {{render_template(f"{APP_TEMPLATE_PATH}/alarm_list.html")}}
+        </div>
+        <div class="box">
+            <form action="/setrtc" method="POST">
+                <input type="datetime-local" id="datetime" name="datetime" value="{{datetime_time}}" required>
+                <input type="submit" class="button" value="Zeit einstellen">
+            </form>
+        </div>
         <script src="data:text/javascript,document.getElementById('toggleBtn').onclick = async function() { await fetch('/toggle'); };" defer></script>
         <script src="data:text/javascript,document.getElementById('resetBtn').onclick = function() { window.location.href = '/reset'; };" defer></script>
-        <script src="data:text/javascript,async function getTemp() { const elem = document.getElementById('tempValue'); elem.innerHTML = 'Updating...'; const t = await fetch('/temperature'); const tVal = await t.text(); elem.innerHTML = tVal; setTimeout(getTemp, 10000)}; getTemp();" defer></script>
     </body>
 </html>

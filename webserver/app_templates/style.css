@@ -6,8 +6,7 @@ body {
     flex-direction: column; /* Elemente vertikal anordnen */
     justify-content: center;
     align-items: center;
-    height: 100vh;
-    margin: 0;
+    margin: 20px 0 0 0;
 }
 
 .box {
@@ -87,21 +86,20 @@ input[type="time"], input[type="datetime-local"] {
     list-style-type: none;
     padding: 0;
 }
+ul {
+    margin: 0;
+    padding: 0;
+}
 
 .alarm-item {
     border-bottom: 1px solid #555;
-    padding: 10px 0;
-    background-color: #222; /* Standard Hintergrundfarbe */
-}
-
-.alarm-item:nth-child(odd) {
-    background-color: #252525; /* Hintergrundfarbe für ungerade Elemente */
 }
 
 .alarm-row {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    padding: 0 20px;
 }
 
 .alarm-time {
@@ -112,18 +110,61 @@ input[type="time"], input[type="datetime-local"] {
     flex-grow: 1;
 }
 
-.weekdays {
+.alarm-weekdays {
     display: flex;
     justify-content: space-between;
-    font-size: 0.8em;
-    margin-top: 5px;
-
+    align-items: center;
+    padding: 10px 0;
 }
 
-.weekday {
-    color: #666; /* Standardfarbe für Wochentage */
+.alarm-weekdays.weekday {
+    color: #666;
+    padding: 0;
+    margin: 0;
 }
 
-.weekday.highlight {
-    color: #fafafa; /* Hervorgehobene Farbe für Mo-Fr */
+.alarm-weekdays.weekday.highlight {
+    color: #fff;
+    padding: 0;
+    margin: 0;
+    font-weight: bold;
+}
+
+/*SWITCH*/
+.switch {
+    position: relative;
+    display: inline-block;
+    width: 60px;
+    height: 34px;
+}
+.switch input {
+    display: none;
+}
+.slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #6b6c72;
+    transition: 0.4s;
+    border-radius: 34px;
+}
+.slider:before {
+    position: absolute;
+    content: "";
+    height: 26px;
+    width: 26px;
+    left: 4px;
+    bottom: 4px;
+    background-color: white;
+    transition: 0.4s;
+    border-radius: 50%;
+}
+input:checked + .slider {
+    background-color: #4ad25c;
+}
+input:checked + .slider:before {
+    transform: translateX(26px);
 }

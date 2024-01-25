@@ -1,6 +1,8 @@
 import json
 from time import gmtime
 
+SUB_FOLDER = "data/"
+
 class FileManager:
     
     def to_dict(self):
@@ -13,16 +15,16 @@ class FileManager:
     @classmethod
     def from_json(cls):
         try:
-            with open("data/"+str(cls).split("'")[1]+".json", "r") as file:
+            with open(SUB_FOLDER + str(cls).split("'")[1] +".json", "r") as file:
                 data = json.load(file)
                 return [cls.from_dict(item) for item in data]
-        except:
+        except OSError:
             return []
 
     @classmethod
     def to_json(cls, lst):
         data = [item.to_dict() for item in lst]
-        file_name = "data/" + str(cls).split("'")[1] + ".json"
+        file_name = SUB_FOLDER + str(cls).split("'")[1] + ".json"
         try:
             with open(file_name, 'w') as file:
                 json.dump(data, file)

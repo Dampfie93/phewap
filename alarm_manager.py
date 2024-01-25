@@ -4,9 +4,9 @@ from utils import FileManager, log, timeStr, clockStr, roundedStr, dateStr, isLe
 
 class Alarm(FileManager):
     
-    alarm_list = [(True, time()+20,  0)]
+    alarm_list = []
 
-    def __init__(self, active, time, repeat, weekday="1111111", snooze=1, snoozetime=7, sound=0, rfid=0):
+    def __init__(self, active, time, repeat, weekday="1111111", snooze=None, snoozetime=None, sound=None, rfid=None):
         self.active     = active
         self.time       = time
         self.repeat     = repeat
@@ -87,10 +87,11 @@ class Alarm(FileManager):
         # Create and add the new alarm
         new_alarm = cls(True, alarm_time, repeat, weekday)
         cls.alarm_list.append(new_alarm)
-        return new_alarm
+        print(f"Added alarm: {new_alarm}")
 
         # Update alarm list
         cls.setAlarmListtoJson()
+        return alarm_time, repeat, weekday
 
     @classmethod
     def getNextAlarm(cls):

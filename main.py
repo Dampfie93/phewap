@@ -6,17 +6,14 @@ import os
 import time
 import _thread
 from alarm_manager import Alarm
+from utils import clockStr
 
-Alarm.getAlarmListfromJson()
-print(Alarm.alarm_list)
-
-
-AP_NAME = "pi pico"
-AP_DOMAIN = "pipico.net"
-PACKAGES_PATH = "webserver"
-AP_TEMPLATE_PATH = PACKAGES_PATH + "/ap_templates"
-APP_TEMPLATE_PATH = PACKAGES_PATH + "/app_templates"
-WIFI_FILE = PACKAGES_PATH + "/wifi.json"
+AP_NAME = "Wecker"
+AP_DOMAIN = "pico.de"
+PACKAGES_PATH = "webserver/"
+AP_TEMPLATE_PATH = PACKAGES_PATH + "ap_templates"
+APP_TEMPLATE_PATH = PACKAGES_PATH + "app_templates"
+WIFI_FILE = PACKAGES_PATH + "wifi.json"
 WIFI_MAX_ATTEMPTS = 3
 
 def machine_reset():
@@ -37,6 +34,13 @@ def convert_datetime_local_to_unix(datetime_time):
     tm = (year, month, day, hour, minute, 0, -1, -1, -1)
     unix_timestamp = time.mktime(tm)
     return unix_timestamp
+
+def convert_datetime_to_rtc(datetime_time):
+    date_part, time_part = datetime_time.split('T')
+    year, month, day     = map(int, date_part.split('-'))
+    hour, minute         = map(int, time_part.split(':'))
+    tm = (year, month, day, -1, hour, minute, 0, 0)
+    return tm
 
 
 def setup_mode():
@@ -78,12 +82,20 @@ def application_mode():
     onboard_led = machine.Pin("LED", machine.Pin.OUT)
 
     def app_index(request):
-        return render_template(f"{APP_TEMPLATE_PATH}/index.html")
-
-    def app_toggle_led(request):
-        onboard_led.toggle()
-        return "OK"
+        set_alarm_list()
+        return render_template(f"{APP_TEMPLATE_PATH}/index.html", datetime_time = get_datetime())
     
+    def get_datetime():
+        year, month, day, hour, minute, _, _, _ = time.localtime(time.time())
+        datetime_time = "{:04d}-{:02d}-{:02d}T{:02d}:{:02d}".format(year, month, day, hour, minute)
+        return datetime_time
+
+    def set_rtc_time(request):
+        datetime_time = request.form.get("datetime")
+        tuple_time = convert_datetime_to_rtc(datetime_time)
+        machine.RTC().datetime(tuple_time)
+        return render_template(f"{APP_TEMPLATE_PATH}/index.html", datetime_time = get_datetime())
+
     def app_get_time(request):
         return f"{time.gmtime()[3]:02d}:{time.gmtime()[4]:02d}"
     
@@ -97,6 +109,7 @@ def application_mode():
         # Reboot from new thread after we have responded to the user.
         _thread.start_new_thread(machine_reset, ())
         return render_template(f"{APP_TEMPLATE_PATH}/reset.html", access_point_ssid = AP_NAME)
+
 
     def app_set_alarm(request):
         # Get alarm time from request
@@ -122,19 +135,69 @@ def application_mode():
             weekday_str = "Einmalig"
 
         # Add alarm to list
-        alarm = Alarm.addAlarm(hour, minute, repeat, weekday)
-        sec_till_alarm = alarm["time"] - time.time()
-        print(f"Alarm set for {sec_till_alarm} seconds from now.")
+        time, repeat, weekday = Alarm.addAlarm(hour, minute, repeat, weekday)
+        print(time, repeat, weekday)
         return render_template(f"{APP_TEMPLATE_PATH}/setalarm.html", alarmtime=time, weekdays=weekday_str)
+    
+    def set_alarm_list():
+        # Update Alarm.alarm_list
+        list = Alarm.getAlarmListfromJson()
+        # Check if list is empty
+        if not Alarm.alarm_list:
+            return "<p>Keine Alarme gesetzt</p>"
+
+        # Create html string
+        str = "<h2>Alarme</h2>"
+        for i, alarm in enumerate(Alarm.alarm_list):
+            # Get alarm data
+            time = clockStr(alarm.time)
+            active = alarm.active
+            repeat = alarm.repeat
+            checked = "checked" if active else ""
+
+            # Create list item
+            str += "<ul class='alarm-list'>"
+            str += "<li class='alarm-item'>"
+
+            # Alarm time
+            str += "<div class='alarm-row'>"
+            str += "<label class='switch'>"
+            str += f"<input type='checkbox' id='toggleSwitch' {checked}>"
+            str += "<span class='slider'></span>"
+            str += "</label>"
+            str += f"<h1>{time}</h1>"
+            str += "</div>"
+
+            # Weekdays
+            if alarm.repeat == 1:
+                str += "<div class='alarm-weekdays'>"
+                for j in range(0, 7):
+                    class_name = "weekday.highlight" if alarm.weekday[j] == "1" else "weekday"
+                    day_name = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"]
+                    str += f"<label class='{class_name}'>{day_name[j]}</label>"
+                str += "</div>"
+
+            # Close list item
+            str += "</li>"
+            str += "</ul>"
+
+        # Write html string to file
+        file_name = f"{APP_TEMPLATE_PATH}/alarm_list.html"
+        try:
+            with open(file_name, 'w') as file:
+                file.write(str)
+        except OSError:
+            # If the file doesn't exist, create it and then write the data
+            with open(file_name, 'x') as file:
+                file.write(str)
+        return render_template(f"{APP_TEMPLATE_PATH}/alarm_list.html")
 
     
     def app_catch_all(request):
         return "Not found.", 404
 
     server.add_route("/", handler = app_index, methods = ["GET"])
-    server.add_route("/time", handler = app_get_time, methods = ["GET"])
-    server.add_route("/date", handler = app_get_date, methods = ["GET"])
-    server.add_route("/toggle", handler = app_toggle_led, methods = ["GET"])
+    server.add_route("/setrtc", handler = set_rtc_time, methods = ["POST"])
     server.add_route("/reset", handler = app_reset, methods = ["GET"])
     server.add_route("/time", handler = app_get_time, methods = ["GET"])
     server.add_route("/setalarm", handler = app_set_alarm, methods = ["POST"])
@@ -144,7 +207,7 @@ def application_mode():
 # Figure out which mode to start up in...
 try:
     os.stat(WIFI_FILE)
-
+    
     # File was found, attempt to connect to wifi...
     with open(WIFI_FILE) as f:
         wifi_current_attempt = 1
@@ -174,6 +237,7 @@ except Exception:
     # Either no wifi configuration file found, or something went wrong, 
     # so go into setup mode.
     setup_mode()
+
 
 # Start the web server...
 server.run()
